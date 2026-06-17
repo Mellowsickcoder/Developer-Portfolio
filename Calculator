@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool ass calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            margin: 0;
+            user-select: none;
+        }
+        .calculator {
+            background-color: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px;
+            width: 320px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .display-container {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background-color: #f1f3f4;
+            overflow: hidden;
+        }
+        .display {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            text-align: right;
+            padding: 10px;
+            font-size: 24px;
+            color: #202124;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            transition: font-size 0.15s ease;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        button {
+            height: 42px;
+            border: 1px solid #f1f3f4;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #f1f3f4;
+            color: #202124;
+            transition: background 0.1s, transform 0.05s;
+        }
+        button:active {
+            transform: scale(0.97); 
+        }
+        button:hover {
+            background-color: #e8eaed;
+            border-color: #dadce0;
+        }
+        button.operator {
+            background-color: #f1f3f4;
+            color: #1a73e8;
+            font-weight: bold;
+        }
+        button.equals {
+            background-color: #4285f4;
+            color: white;
+            font-weight: bold;
+        }
+        button.equals:hover {
+            background-color: #1a73e8;
+        }
+        button.clear {
+            color: #d93025;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <div class="display-container">
+        <input type="text" class="display" id="screen" readonly value="0">
+    </div>
+    <div class="grid">
+        <button class="clear" data-val="clear">C</button>
+        <button class="operator" data-val="(">(</button>
+        <button class="operator" data-val=")">)</button>
+        <button class="operator" data-val="/">/</button>
+        
+        <button data-val="7">7</button>
+        <button data-val="8">8</button>
+        <button data-val="9">9</button>
+        <button class="operator" data-val="*">×</button>
+        
+        <button data-val="4">4</button>
+        <button data-val="5">5</button>
+        <button data-val="6">6</button>
+        <button class="operator" data-val="-">−</button>
+        
+        <button data-val="1">1</button>
+        <button data-val="2">2</button>
+        <button data-val="3">3</button>
+        <button class="operator" data-val="+">+</button>
+        
+        <button data-val="0">0</button>
+        <button data-val=".">.</button>
+        <button class="equals" data-val="equals" style="grid-column: span 2;">=</button>
+    </div>
+</div>
+
+<script>
+    const CALC = {
+        expression: '0',
+        isResetMode: false,
+        operators: ['+', '-', '*', '/'],
+        
+        dom: {
+            screen: document.getElementById('screen'),
+            grid: document.querySelector('.grid')
+        },
+
+        init() {
+            this.dom.grid.addEventListener('click', (e) => this.handleGridClick(e));
+            window.addEventListener('keydown', (e) => this.handleKeyboard(e));
+        },
+
+        updateUI() {
+            this.dom.screen.value = this.expression;
+            
+            const len = this.expression.length;
+            if (len > 12) {
+                this.dom.screen.style.fontSize = '16px';
+            } else if (len > 8) {
+                this.dom.screen.style.fontSize = '20px';
+            } else {
+                this.dom.screen.style.fontSize = '24px';
+            }
+        },
+
+        pressToken(token) {
+            const lastChar = this.expression.slice(-1);
+
+            if (this.operators.includes(token) && this.operators.includes(lastChar)) {
+                return; 
+            }
+
+            if (token === '.' && lastChar === '.') return;
+
+            if (this.expression === '0' || this.expression === 'Error' || this.isResetMode) {
+                if (this.operators.includes(token)) {
+                    this.isResetMode = false;
+                } else {
+                    this.expression = '';
+                    this.isResetMode = false;
+                }
+            }
+
+            this.expression += token;
+            this.updateUI();
+        },
+
+        clear() {
+            this.expression = '0';
+            this.updateUI();
+        },
+
+        evaluate() {
+            try {
+                let result = Function('"use strict";return (' + this.expression + ')')();
+                
+                if (result === undefined || isNaN(result) || !isFinite(result)) {
+                    throw new Error("Invalid Output");
+                }
+
+                if (result % 1 !== 0) {
+                    result = parseFloat(result.toFixed(8));
+                }
+                
+                this.expression = String(result);
+                this.isResetMode = true;
+            } catch (error) {
+                this.expression = 'Error';
+                this.isResetMode = true;
+            }
+            this.updateUI();
+        },
+
+        handleGridClick(e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            
+            const action = btn.dataset.val;
+            this.executeAction(action);
+        },
+
+        handleKeyboard(e) {
+            const keyMap = {
+                'Enter': 'equals', '=': 'equals',
+                'Escape': 'clear', 'c': 'clear', 'C': 'clear',
+                '+': '+', '-': '-', '*': '*', '/': '/'
+            };
+            
+            let action = keyMap[e.key] || e.key;
+            
+            if (!isNaN(action) || action === '.' || action === '(' || action === ')') {
+                this.executeAction(action);
+            } else if (Object.values(keyMap).includes(action)) {
+                this.executeAction(action);
+            }
+        },
+
+        executeAction(action) {
+            if (action === 'clear') this.clear();
+            else if (action === 'equals') this.evaluate();
+            else this.pressToken(action);
+        }
+    };
+
+    CALC.init();
+</script>
+
+</body>
+</html>
