@@ -24,6 +24,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
-
-
-git add app.js

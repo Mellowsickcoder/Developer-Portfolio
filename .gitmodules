@@ -1,0 +1,6 @@
+[submodule "Calculator"]
+	path = Calculator
+	url = https://github.com/Mellowsickcoder/Calculator.git
+[submodule "Flappy-Duel"]
+	path = Flappy-Duel
+	url = https://github.com/Mellowsickcoder/Flappy-Duel.git
